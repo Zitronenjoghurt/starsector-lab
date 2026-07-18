@@ -12,6 +12,7 @@ version = "0.1.0-alpha.1"
 starsector-lab = { path = "core" }
 dirs = "6.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
+strum = { version = "0.28.0", features = ["derive"] }
 
 [profile.release]
 strip = true

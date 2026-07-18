@@ -11,6 +11,13 @@ check:
 	cargo clippy --all-targets -- -D warnings
 	cargo test
 
+deny:
+	cargo install cargo-deny
+	cargo deny --log-level error check
+
+licenses:
+	cargo about generate --locked --fail about.hbs -o /dev/null
+
 release:
 	@if [ -z "$(v)" ]; then echo "Error: Version parameter is required. Use 'make release v=x.y.z'"; exit 1; fi
 	@grep -q '^version = "$(v)"$$' Cargo.toml || { echo "Error: workspace version in Cargo.toml does not match $(v)"; exit 1; }

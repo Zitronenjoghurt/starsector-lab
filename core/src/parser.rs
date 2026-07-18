@@ -1,8 +1,8 @@
-use crate::data::ship::Ship;
 use crate::data::Data;
+use crate::data::ship::Ship;
 use crate::error::LabResult;
-use crate::parser::csv::hull::HullRow;
 use crate::parser::csv::CsvRows;
+use crate::parser::csv::hull::HullRow;
 use crate::parser::json::read_json;
 use crate::parser::json::ship::ShipFile;
 use crate::validate_starsector_core_dir;
@@ -30,7 +30,10 @@ impl Parser {
 
     pub fn data(&self) -> LabResult<Data> {
         let ships = self.ships()?.collect::<LabResult<Vec<_>>>()?;
-        Ok(Data { ships })
+        Ok(Data {
+            core_dir: Some(self.core_dir.clone()),
+            ships,
+        })
     }
 
     pub fn hulls(&self) -> LabResult<CsvRows<HullRow>> {

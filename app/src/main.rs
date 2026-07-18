@@ -1,20 +1,7 @@
-use starsector_lab::locate::locate_core_dirs;
-use starsector_lab::parser::Parser;
-
 mod app;
+mod ui;
 
 fn main() {
-    let paths = locate_core_dirs();
-    let parser = Parser::new(paths.first().unwrap()).unwrap();
-    let ships = parser
-        .ships()
-        .unwrap()
-        .map(|r| r.unwrap())
-        .collect::<Vec<_>>();
-
-    println!("{:#?}", ships);
-    println!("{:#?}", ships.len());
-
     let native_options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
         viewport: egui::ViewportBuilder::default()
