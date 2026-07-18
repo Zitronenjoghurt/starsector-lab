@@ -1,0 +1,27 @@
+THIRD-PARTY LICENSES
+====================
+
+starsector-lab is distributed as a compiled binary that statically links the
+third-party Rust crates listed below. Each distinct license is reproduced once,
+followed by the crates it covers. This file is generated with cargo-about from
+the locked dependency graph; it does not cover starsector-lab's own code, which
+is licensed under the terms in the accompanying LICENSE file.
+
+Overview of licenses:
+{{#each overview}}
+  {{name}} ({{count}})
+{{/each}}
+
+{{#each licenses}}
+================================================================================
+{{name}}
+================================================================================
+
+Applies to:
+{{#each used_by}}
+  - {{crate.name}} {{crate.version}}
+{{/each}}
+
+{{{text}}}
+
+{{/each}}
