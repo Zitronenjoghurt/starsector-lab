@@ -8,5 +8,6 @@ version.workspace = true
 [dependencies]
 csv = "1.4.0"
 dirs = { workspace = true }
+json5 = "0.4.1"
 serde = { workspace = true }
 thiserror = "2.0.18"

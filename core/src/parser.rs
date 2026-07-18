@@ -1,13 +1,17 @@
 use crate::data::ship::Ship;
+use crate::data::Data;
 use crate::error::LabResult;
+use crate::parser::csv::hull::HullRow;
+use crate::parser::csv::CsvRows;
+use crate::parser::json::read_json;
+use crate::parser::json::ship::ShipFile;
 use crate::validate_starsector_core_dir;
 use serde::de::DeserializeOwned;
-use std::marker::PhantomData;
-use std::path::Path;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
-mod hull;
-pub use hull::Hull;
+pub mod csv;
+pub mod json;
 
 pub struct Parser {
     core_dir: PathBuf,
@@ -24,61 +28,38 @@ impl Parser {
         CsvRows::open(self.core_dir.join(rel))
     }
 
-    pub fn hulls(&self) -> LabResult<CsvRows<Hull>> {
+    pub fn data(&self) -> LabResult<Data> {
+        let ships = self.ships()?.collect::<LabResult<Vec<_>>>()?;
+        Ok(Data { ships })
+    }
+
+    pub fn hulls(&self) -> LabResult<CsvRows<HullRow>> {
         self.csv("data/hulls/ship_data.csv")
     }
 
-    pub fn ships(&self) -> LabResult<impl Iterator<Item = LabResult<Ship>>> {
-        Ok(self.hulls()?.filter_map(|res| match res {
-            Ok(hull) => Ship::from_hull(hull).map(Ok),
-            Err(e) => Some(Err(e)),
-        }))
-    }
-}
-
-pub struct CsvRows<T> {
-    reader: csv::Reader<std::fs::File>,
-    headers: csv::StringRecord,
-    record: csv::StringRecord,
-    _marker: PhantomData<T>,
-}
-
-impl<T> CsvRows<T> {
-    pub fn open(path: impl AsRef<Path>) -> LabResult<Self> {
-        let mut reader = csv::ReaderBuilder::new()
-            .comment(Some(b'#'))
-            .flexible(true)
-            .trim(csv::Trim::All)
-            .from_path(path)?;
-        let headers = reader.headers()?.clone();
-        Ok(Self {
-            reader,
-            headers,
-            record: csv::StringRecord::new(),
-            _marker: PhantomData,
-        })
-    }
-}
-
-impl<T: DeserializeOwned> Iterator for CsvRows<T> {
-    type Item = LabResult<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            return match self.reader.read_record(&mut self.record) {
-                Ok(false) => None,
-                Err(e) => Some(Err(e.into())),
-                Ok(true) => {
-                    if self.record.iter().all(|f| f.trim().is_empty()) {
-                        continue;
-                    }
-                    Some(
-                        self.record
-                            .deserialize(Some(&self.headers))
-                            .map_err(Into::into),
-                    )
-                }
-            };
+    pub fn ship_files(&self) -> LabResult<HashMap<String, ShipFile>> {
+        let mut index = HashMap::new();
+        for entry in std::fs::read_dir(self.core_dir.join("data/hulls"))? {
+            let path = entry?.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("ship") {
+                continue;
+            }
+            let file: ShipFile = read_json(&path)?;
+            index.insert(file.hull_id.clone(), file);
         }
+        Ok(index)
+    }
+
+    pub fn ships(&self) -> LabResult<impl Iterator<Item = LabResult<Ship>>> {
+        let mut layouts = self.ship_files()?;
+        let core_dir = self.core_dir.clone();
+        Ok(self.hulls()?.filter_map(move |res| {
+            let hull = match res {
+                Ok(hull) => hull,
+                Err(e) => return Some(Err(e)),
+            };
+            let layout = layouts.remove(&hull.id)?;
+            Ship::from_parts(hull, layout, &core_dir).map(Ok)
+        }))
     }
 }

@@ -1,5 +1,5 @@
 #[derive(Debug, serde::Deserialize)]
-pub struct Hull {
+pub struct HullRow {
     /// In-game display name
     pub name: String,
     /// Unique hull identifier
