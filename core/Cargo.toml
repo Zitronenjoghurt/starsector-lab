@@ -6,3 +6,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+csv = "1.4.0"
+dirs = { workspace = true }
+serde = { workspace = true }
+thiserror = "2.0.18"
