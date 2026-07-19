@@ -1,10 +1,13 @@
 use crate::data::Data;
 use crate::data::ship::Ship;
+use crate::data::weapon::Weapon;
 use crate::error::LabResult;
 use crate::parser::csv::CsvRows;
 use crate::parser::csv::hull::HullRow;
+use crate::parser::csv::weapon::WeaponRow;
 use crate::parser::json::read_json;
 use crate::parser::json::ship::ShipFile;
+use crate::parser::wpn::read_weapon_specs;
 use crate::validate_starsector_core_dir;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
@@ -12,6 +15,7 @@ use std::path::PathBuf;
 
 pub mod csv;
 pub mod json;
+pub mod wpn;
 
 pub struct Parser {
     core_dir: PathBuf,
@@ -30,10 +34,29 @@ impl Parser {
 
     pub fn data(&self) -> LabResult<Data> {
         let ships = self.ships()?.collect::<LabResult<Vec<_>>>()?;
+        let weapons = self.weapons()?.collect::<LabResult<Vec<_>>>()?;
         Ok(Data {
             core_dir: Some(self.core_dir.clone()),
             ships,
+            weapons,
         })
+    }
+
+    pub fn weapon_rows(&self) -> LabResult<CsvRows<WeaponRow>> {
+        self.csv("data/weapons/weapon_data.csv")
+    }
+
+    pub fn weapons(&self) -> LabResult<impl Iterator<Item = LabResult<Weapon>>> {
+        let mut specs = read_weapon_specs(&self.core_dir.join("data/weapons"))?;
+        let core_dir = self.core_dir.clone();
+        Ok(self.weapon_rows()?.filter_map(move |res| {
+            let row = match res {
+                Ok(row) => row,
+                Err(e) => return Some(Err(e)),
+            };
+            let spec = specs.remove(&row.id)?;
+            Weapon::from_parts(row, spec, &core_dir).map(Ok)
+        }))
     }
 
     pub fn hulls(&self) -> LabResult<CsvRows<HullRow>> {

@@ -54,7 +54,7 @@ jobs:
         run: |
           ARCHIVE="starsector-lab-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir "$ARCHIVE"
-          cp LICENSE README.md THIRD-PARTY-LICENSES.txt "$ARCHIVE"/
+          cp LICENSE THIRD-PARTY-LICENSES.txt "$ARCHIVE"/
           if [[ "${{ matrix.target }}" == *windows* ]]; then
             cp "target/${{ matrix.target }}/release/starsector-lab-app.exe" "$ARCHIVE/starsector-lab.exe"
             7z a "$ARCHIVE.zip" "$ARCHIVE"

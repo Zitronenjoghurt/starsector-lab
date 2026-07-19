@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 pub mod hull;
+pub mod weapon;
 
 pub struct CsvRows<T> {
     reader: csv::Reader<std::fs::File>,

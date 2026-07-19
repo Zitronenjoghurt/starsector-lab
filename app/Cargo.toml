@@ -11,12 +11,14 @@ starsector-lab = { workspace = true }
 eframe = { version = "0.35.0", default-features = false, features = ["accesskit", "default_fonts", "persistence", "wgpu"] }
 egui = "0.35.0"
 egui_extras = "0.35.0"
-egui-notify = "0.22.0"
 egui-phosphor = { git = "https://github.com/Zitronenjoghurt/egui-phosphor.git", rev = "573b1ff1ee655c0a5eab77d7733d4ae66a2cd570", default-features = false, features = ["regular"] }
 rfd = "0.17.2"
+# NOTE: egui-notify has no egui 0.35 release yet, so load feedback lives in the
+# bottom status bar instead (see LoadStatus / BottomPanel).
 serde = { workspace = true }
 strum = { workspace = true }
 fastrand = "2.4.1"
+image = { version = "0.25.5", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 eframe = { version = "0.35.0", default-features = false, features = ["wayland", "x11"] }

@@ -27,12 +27,14 @@ impl Theme {
     pub const TEXT: Color32 = Color32::from_rgb(0xc6, 0xd4, 0xdf);
     pub const AMBER: Color32 = Color32::from_rgb(0xff, 0xb0, 0x4a);
     pub const RED: Color32 = Color32::from_rgb(0xd8, 0x55, 0x45);
+    pub const GREEN: Color32 = Color32::from_rgb(0x5c, 0xc9, 0x7a);
 
     const CORNER: CornerRadius = CornerRadius::same(2);
 
     pub fn apply(ctx: &egui::Context) {
         Self::apply_fonts(ctx);
         Self::apply_visuals(ctx);
+        ctx.all_styles_mut(|style| style.interaction.selectable_labels = false);
     }
 
     fn apply_fonts(ctx: &egui::Context) {
