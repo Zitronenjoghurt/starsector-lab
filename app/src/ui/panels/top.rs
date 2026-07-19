@@ -35,14 +35,29 @@ impl<'a> TopPanel<'a> {
             .as_ref()
             .and_then(|p| p.file_name().and_then(|n| n.to_str()))
             .map(|name| name.to_owned())
-            .unwrap_or_else(|| "Set core dir".to_owned());
+            .unwrap_or_else(|| "Set Starsector folder".to_owned());
 
         let button = RichText::new(format!("{icon} {label}")).color(color);
         ui.menu_button(button, |ui| {
-            ui.set_min_width(260.0);
+            ui.set_min_width(320.0);
+
+            ui.label(
+                RichText::new(
+                    "Pick the game install folder, Starsector.app, or the starsector-core folder",
+                )
+                .small()
+                .weak(),
+            );
+            ui.separator();
 
             if let Some(dir) = &self.lab.ui.data_source.core_dir {
+                ui.label(RichText::new("Current").small().strong());
                 ui.label(RichText::new(dir.to_string_lossy()).small().weak());
+                ui.separator();
+            }
+
+            if let Some(err) = &self.lab.ui.data_source.last_error {
+                ui.label(RichText::new(err).small().color(Theme::RED));
                 ui.separator();
             }
 
@@ -92,14 +107,15 @@ impl<'a> TopPanel<'a> {
                 chosen = Some(dir);
             }
 
-            if let Some(dir) = chosen {
-                self.lab.ui.data_source.set(dir);
+            if let Some(dir) = chosen
+                && self.lab.ui.data_source.set_from_pick(dir)
+            {
                 self.lab.ui.pending_reload = true;
                 ui.close();
             }
         })
         .response
-        .on_hover_text("Starsector core / data directory");
+        .on_hover_text("Your Starsector install folder, Starsector.app, or starsector-core");
     }
 
     fn dataset_tabs(&mut self, ui: &mut Ui) {

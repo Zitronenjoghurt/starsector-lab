@@ -1,12 +1,12 @@
 use crate::app::Lab;
 use crate::ui::icons;
-use crate::ui::panels::panel_frame;
+use crate::ui::panels::{PANEL_MARGIN, panel_frame};
 use crate::ui::state::DatasetUi;
 use crate::ui::state::view::Dataset;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::sprite::{SpriteCache, show_sprite};
 use crate::ui::widgets::table::TableEntity;
-use egui::{Align, Color32, Layout, Panel, RichText, ScrollArea, Ui};
+use egui::{Align, Color32, Label, Layout, Margin, Panel, RichText, ScrollArea, Ui};
 use egui_extras::{Column as EColumn, TableBuilder};
 use starsector_lab::data::ship::Ship;
 use std::collections::BTreeMap;
@@ -25,7 +25,10 @@ impl<'a> RightPanel<'a> {
             .resizable(true)
             .default_size(280.0)
             .max_size(380.0)
-            .frame(panel_frame(ui.style()))
+            .frame(panel_frame(ui.style()).inner_margin(Margin {
+                left: PANEL_MARGIN.left + 8,
+                ..PANEL_MARGIN
+            }))
             .show(ui, |ui| {
                 let lab = &mut *self.lab;
 
@@ -37,15 +40,21 @@ impl<'a> RightPanel<'a> {
                 );
                 ui.separator();
 
+                let sprite_size = lab.ui.settings.layout.inspector_sprite_size;
                 match lab.ui.view.dataset {
-                    Dataset::Ships => {
-                        ship_inspector(ui, &mut lab.ui.ships, &lab.data.ships, &mut lab.sprites)
-                    }
+                    Dataset::Ships => ship_inspector(
+                        ui,
+                        &mut lab.ui.ships,
+                        &lab.data.ships,
+                        &mut lab.sprites,
+                        sprite_size,
+                    ),
                     Dataset::Weapons => generic_inspector(
                         ui,
                         &mut lab.ui.weapons,
                         &lab.data.weapons,
                         &mut lab.sprites,
+                        sprite_size,
                     ),
                 }
             });
@@ -78,6 +87,7 @@ fn generic_inspector<T: TableEntity>(
     ds: &mut DatasetUi,
     data: &[T],
     sprites: &mut SpriteCache,
+    sprite_size: f32,
 ) {
     let Some(id) = ds.selected.clone() else {
         empty(ui);
@@ -87,17 +97,26 @@ fn generic_inspector<T: TableEntity>(
         return;
     };
 
-    ScrollArea::vertical().show(ui, |ui| {
-        ui.vertical_centered(|ui| {
-            show_sprite(ui, sprites, entity.sprite_path(), 160.0);
-            ui.heading(RichText::new(entity.name()).color(Theme::CYAN_BRIGHT));
+    ScrollArea::vertical()
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                show_sprite(ui, sprites, entity.sprite_path(), sprite_size);
+                ui.add(
+                    Label::new(
+                        RichText::new(entity.name())
+                            .color(Theme::CYAN_BRIGHT)
+                            .heading(),
+                    )
+                    .truncate(),
+                );
+            });
+            ui.add_space(6.0);
+            pin_button(ui, ds, &id);
+            ui.add_space(6.0);
+            ui.separator();
+            column_table(ui, entity);
         });
-        ui.add_space(6.0);
-        pin_button(ui, ds, &id);
-        ui.add_space(6.0);
-        ui.separator();
-        column_table(ui, entity);
-    });
 }
 
 fn column_table<T: TableEntity>(ui: &mut Ui, entity: &T) {
@@ -105,8 +124,8 @@ fn column_table<T: TableEntity>(ui: &mut Ui, entity: &T) {
         .id_salt("inspector_cols")
         .striped(true)
         .vscroll(false)
-        .column(EColumn::auto().at_least(110.0))
-        .column(EColumn::remainder())
+        .column(EColumn::remainder().clip(true))
+        .column(EColumn::auto().clip(true))
         .body(|mut body| {
             for col in T::columns() {
                 if col.id == "name" {
@@ -114,10 +133,15 @@ fn column_table<T: TableEntity>(ui: &mut Ui, entity: &T) {
                 }
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
-                        ui.label(RichText::new(col.label).weak());
+                        let label =
+                            ui.add(Label::new(RichText::new(col.full_label).weak()).truncate());
+                        if !col.tooltip.is_empty() {
+                            label.on_hover_text(col.tooltip);
+                        }
                     });
                     row.col(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_space(8.0);
                             ui.monospace((col.value)(entity).to_string());
                         });
                     });
@@ -126,7 +150,13 @@ fn column_table<T: TableEntity>(ui: &mut Ui, entity: &T) {
         });
 }
 
-fn ship_inspector(ui: &mut Ui, ds: &mut DatasetUi, ships: &[Ship], sprites: &mut SpriteCache) {
+fn ship_inspector(
+    ui: &mut Ui,
+    ds: &mut DatasetUi,
+    ships: &[Ship],
+    sprites: &mut SpriteCache,
+    sprite_size: f32,
+) {
     let Some(id) = ds.selected.clone() else {
         empty(ui);
         return;
@@ -135,34 +165,80 @@ fn ship_inspector(ui: &mut Ui, ds: &mut DatasetUi, ships: &[Ship], sprites: &mut
         return;
     };
 
-    ScrollArea::vertical().show(ui, |ui| {
-        ui.vertical_centered(|ui| {
-            show_sprite(ui, sprites, Some(&ship.layout.sprite), 180.0);
-            ui.heading(RichText::new(&ship.name).color(Theme::CYAN_BRIGHT));
-            ui.weak(subtitle(ship));
+    ScrollArea::vertical()
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                show_sprite(ui, sprites, Some(&ship.layout.sprite), sprite_size);
+                ui.add(
+                    Label::new(
+                        RichText::new(&ship.name)
+                            .color(Theme::CYAN_BRIGHT)
+                            .heading(),
+                    )
+                    .truncate(),
+                );
+                let size = &ship.layout.hull_size;
+                ui.label(
+                    RichText::new(format!("{} {}", size_icon(size), pretty_size(size)))
+                        .strong()
+                        .color(size_color(size)),
+                )
+                .on_hover_text("Hull size class");
+                ui.label(RichText::new(subtitle(ship)).weak());
+            });
+
+            ui.add_space(6.0);
+            pin_button(ui, ds, &id);
+
+            ui.add_space(6.0);
+            ui.separator();
+            weapon_mounts(ui, ship);
+            stats(ship, ui);
+            built_ins(ui, ship);
         });
-
-        ui.add_space(6.0);
-        pin_button(ui, ds, &id);
-
-        ui.add_space(6.0);
-        ui.separator();
-        weapon_mounts(ui, ship);
-        stats(ship, ui);
-        built_ins(ui, ship);
-    });
 }
 
 fn subtitle(ship: &Ship) -> String {
     [
         ship.designation.as_deref(),
-        Some(ship.layout.hull_size.as_str()),
         ship.tech_manufacturer.as_deref(),
     ]
     .into_iter()
     .flatten()
     .collect::<Vec<_>>()
     .join(" · ")
+}
+
+fn size_icon(hull_size: &str) -> &'static str {
+    match hull_size {
+        "FIGHTER" => icons::CELL_SIGNAL_NONE,
+        "FRIGATE" => icons::CELL_SIGNAL_LOW,
+        "DESTROYER" => icons::CELL_SIGNAL_MEDIUM,
+        "CRUISER" => icons::CELL_SIGNAL_HIGH,
+        "CAPITAL_SHIP" => icons::CELL_SIGNAL_FULL,
+        _ => icons::CELL_SIGNAL_X,
+    }
+}
+
+fn pretty_size(hull_size: &str) -> &str {
+    match hull_size {
+        "FIGHTER" => "Fighter",
+        "FRIGATE" => "Frigate",
+        "DESTROYER" => "Destroyer",
+        "CRUISER" => "Cruiser",
+        "CAPITAL_SHIP" => "Capital ship",
+        other => other,
+    }
+}
+
+fn size_color(hull_size: &str) -> Color32 {
+    match hull_size {
+        "CAPITAL_SHIP" => Theme::AMBER,
+        "CRUISER" => Theme::CYAN_BRIGHT,
+        "DESTROYER" => Theme::CYAN,
+        _ => Theme::CYAN_DIM,
+    }
 }
 
 fn weapon_mounts(ui: &mut Ui, ship: &Ship) {
@@ -231,64 +307,119 @@ fn stats(ship: &Ship, ui: &mut Ui) {
         ui,
         "META",
         &[
-            ("Fleet points", ship.fleet_points.to_string()),
-            ("Ordnance", ship.ordnance_points.to_string()),
-            ("Base value", ship.base_value.to_string()),
+            (
+                "Fleet points",
+                "fleet_points",
+                ship.fleet_points.to_string(),
+            ),
+            (
+                "Ordnance",
+                "ordnance_points",
+                ship.ordnance_points.to_string(),
+            ),
+            ("Base value", "base_value", ship.base_value.to_string()),
         ],
     );
     section(
         ui,
         "DEFENSE",
         &[
-            ("Hull", ship.hit_points.to_string()),
-            ("Armor", ship.armor_rating.to_string()),
-            ("Flux cap", ship.max_flux.to_string()),
-            ("Dissipation", ship.flux_dissipation.to_string()),
-            ("Shield", ship.shield_type.clone()),
-            ("Shield arc", opt_deg(ship.shield_arc)),
-            ("Shield upkeep", opt_num(ship.shield_upkeep)),
-            ("Shield eff.", opt_num(ship.shield_efficiency)),
-            ("Phase cost", opt_num(ship.phase_cost)),
-            ("Phase upkeep", opt_num(ship.phase_upkeep)),
+            ("Hull", "hit_points", ship.hit_points.to_string()),
+            ("Armor", "armor_rating", ship.armor_rating.to_string()),
+            ("Flux cap", "max_flux", ship.max_flux.to_string()),
+            (
+                "Dissipation",
+                "flux_dissipation",
+                ship.flux_dissipation.to_string(),
+            ),
+            ("Shield", "shield_type", ship.shield_type.clone()),
+            ("Shield arc", "shield_arc", opt_deg(ship.shield_arc)),
+            (
+                "Shield upkeep",
+                "shield_upkeep",
+                opt_num(ship.shield_upkeep),
+            ),
+            (
+                "Shield eff.",
+                "shield_efficiency",
+                opt_num(ship.shield_efficiency),
+            ),
+            ("Phase cost", "phase_cost", opt_num(ship.phase_cost)),
+            ("Phase upkeep", "phase_upkeep", opt_num(ship.phase_upkeep)),
         ],
     );
     section(
         ui,
         "MOBILITY",
         &[
-            ("Speed", num(ship.max_speed)),
-            ("Acceleration", num(ship.acceleration)),
-            ("Deceleration", num(ship.deceleration)),
-            ("Turn rate", num(ship.max_turn_rate)),
-            ("Turn accel.", num(ship.turn_acceleration)),
-            ("Mass", num(ship.mass)),
+            ("Speed", "max_speed", num(ship.max_speed)),
+            ("Acceleration", "acceleration", num(ship.acceleration)),
+            ("Deceleration", "deceleration", num(ship.deceleration)),
+            ("Turn rate", "max_turn_rate", num(ship.max_turn_rate)),
+            (
+                "Turn accel.",
+                "turn_acceleration",
+                num(ship.turn_acceleration),
+            ),
+            ("Mass", "mass", num(ship.mass)),
         ],
     );
     section(
         ui,
         "LOGISTICS",
         &[
-            ("Fighter bays", ship.fighter_bays.to_string()),
-            ("Min crew", ship.min_crew.to_string()),
-            ("Max crew", ship.max_crew.to_string()),
-            ("Cargo", ship.cargo.to_string()),
-            ("Fuel", ship.fuel.to_string()),
-            ("Fuel / ly", num(ship.fuel_per_ly)),
-            ("Burn", ship.max_burn.to_string()),
-            ("Supplies / mo", num(ship.supplies_per_month)),
-            ("Supplies / recovery", num(ship.supplies_per_recovery)),
+            (
+                "Fighter bays",
+                "fighter_bays",
+                ship.fighter_bays.to_string(),
+            ),
+            ("Min crew", "min_crew", ship.min_crew.to_string()),
+            ("Max crew", "max_crew", ship.max_crew.to_string()),
+            ("Cargo", "cargo", ship.cargo.to_string()),
+            ("Fuel", "fuel", ship.fuel.to_string()),
+            ("Fuel / ly", "fuel_per_ly", num(ship.fuel_per_ly)),
+            ("Burn", "max_burn", ship.max_burn.to_string()),
+            (
+                "Supplies / mo",
+                "supplies_per_month",
+                num(ship.supplies_per_month),
+            ),
+            (
+                "Supplies / recovery",
+                "supplies_per_recovery",
+                num(ship.supplies_per_recovery),
+            ),
         ],
     );
     section(
         ui,
         "COMBAT READINESS",
         &[
-            ("CR / day", num(ship.cr_percent_per_day)),
-            ("CR to deploy", ship.cr_to_deploy.to_string()),
-            ("Peak CR (sec)", ship.peak_cr_sec.to_string()),
-            ("CR loss / sec", num(ship.cr_loss_per_sec)),
+            (
+                "CR / day",
+                "cr_percent_per_day",
+                num(ship.cr_percent_per_day),
+            ),
+            (
+                "CR to deploy",
+                "cr_to_deploy",
+                ship.cr_to_deploy.to_string(),
+            ),
+            ("Peak CR (sec)", "peak_cr_sec", ship.peak_cr_sec.to_string()),
+            (
+                "CR loss / sec",
+                "cr_loss_per_sec",
+                num(ship.cr_loss_per_sec),
+            ),
         ],
     );
+}
+
+fn ship_tip(id: &str) -> &'static str {
+    Ship::columns()
+        .iter()
+        .find(|c| c.id == id)
+        .map_or("", |c| c.tooltip)
 }
 
 fn built_ins(ui: &mut Ui, ship: &Ship) {
@@ -334,23 +465,28 @@ fn list_row(ui: &mut Ui, label: &str, values: &[String]) {
     });
 }
 
-fn section(ui: &mut Ui, title: &str, rows: &[(&str, String)]) {
+fn section(ui: &mut Ui, title: &str, rows: &[(&str, &str, String)]) {
     ui.add_space(4.0);
     ui.label(RichText::new(title).small().strong().color(Theme::CYAN_DIM));
     TableBuilder::new(ui)
         .id_salt(title)
         .striped(true)
         .vscroll(false)
-        .column(EColumn::auto().at_least(110.0))
-        .column(EColumn::remainder())
+        .column(EColumn::remainder().clip(true))
+        .column(EColumn::auto().clip(true))
         .body(|mut body| {
-            for (label, value) in rows {
+            for (label, id, value) in rows {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
-                        ui.label(RichText::new(*label).weak());
+                        let response = ui.add(Label::new(RichText::new(*label).weak()).truncate());
+                        let tip = ship_tip(id);
+                        if !tip.is_empty() {
+                            response.on_hover_text(tip);
+                        }
                     });
                     row.col(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_space(8.0);
                             ui.monospace(value);
                         });
                     });

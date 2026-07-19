@@ -6,7 +6,7 @@ members = ["app", "core"]
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/Zitronenjoghurt/starsector-lab"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 
 [workspace.dependencies]
 starsector-lab = { path = "core" }

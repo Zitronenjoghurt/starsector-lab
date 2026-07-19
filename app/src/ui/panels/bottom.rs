@@ -71,12 +71,12 @@ impl<'a> BottomPanel<'a> {
                         match status {
                             LoadStatus::Loaded { ships, weapons } => {
                                 ui.label(
-                                    RichText::new(format!(
-                                        "{} loaded {ships} ships, {weapons} weapons",
-                                        icons::CHECK_CIRCLE
-                                    ))
-                                    .color(Theme::GREEN),
-                                );
+                                    RichText::new(format!("{} loaded", icons::CHECK_CIRCLE))
+                                        .color(Theme::GREEN),
+                                )
+                                .on_hover_text(format!(
+                                    "Loaded {ships} ships and {weapons} weapons"
+                                ));
                             }
                             LoadStatus::Failed(msg) => {
                                 ui.label(

@@ -5,7 +5,7 @@ use egui_extras::{Column as EColumn, TableBuilder};
 use std::cmp::Ordering;
 use std::path::Path;
 
-const ROW_HEIGHT: f32 = 26.0;
+const DEFAULT_ROW_HEIGHT: f32 = 26.0;
 const HEADER_HEIGHT: f32 = 24.0;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -65,8 +65,11 @@ impl std::fmt::Display for CellValue {
 pub struct Column<T> {
     /// Stable identifier, used for persistence of visibility and sort order.
     pub id: &'static str,
-    /// Header label.
+    /// Compact header label, kept short to fit the table header (e.g. "Diss").
     pub label: &'static str,
+    /// Fuller, self-describing name used where there is room: the column
+    /// toggles, the inspector and the compare view (e.g. "Dissipation").
+    pub full_label: &'static str,
     /// Right-align the cell (for numbers).
     pub numeric: bool,
     /// Whether the column is shown by default (before the user customises).
@@ -137,7 +140,6 @@ impl TableState {
         if visible {
             if !self.is_visible(id) {
                 self.visible.push(id.to_owned());
-                // Re-sort visible ids into the canonical column order.
                 self.visible.sort_by_key(|vid| {
                     columns
                         .iter()
@@ -235,6 +237,7 @@ pub struct Table<'a, T: TableEntity> {
     state: &'a mut TableState,
     selected: &'a mut Option<String>,
     sprites: &'a mut SpriteCache,
+    row_height: f32,
 }
 
 impl<'a, T: TableEntity> Table<'a, T> {
@@ -251,7 +254,13 @@ impl<'a, T: TableEntity> Table<'a, T> {
             state,
             selected,
             sprites,
+            row_height: DEFAULT_ROW_HEIGHT,
         }
+    }
+
+    pub fn row_height(mut self, row_height: f32) -> Self {
+        self.row_height = row_height;
+        self
     }
 
     pub fn show(self, ui: &mut Ui) {
@@ -273,6 +282,7 @@ impl<'a, T: TableEntity> Table<'a, T> {
             state,
             selected,
             sprites,
+            row_height,
         } = self;
 
         let multi_sort = state.sort.len() > 1;
@@ -289,7 +299,7 @@ impl<'a, T: TableEntity> Table<'a, T> {
                     .auto_shrink([false, false])
                     .min_scrolled_height(0.0)
                     .cell_layout(Layout::left_to_right(Align::Center))
-                    .column(EColumn::exact(ROW_HEIGHT)); // sprite column
+                    .column(EColumn::exact(row_height)); // sprite column
 
                 for col in &visible {
                     builder = builder.column(EColumn::initial(col.width).at_least(28.0).clip(true));
@@ -314,13 +324,13 @@ impl<'a, T: TableEntity> Table<'a, T> {
                         }
                     })
                     .body(|body| {
-                        body.rows(ROW_HEIGHT, order.len(), |mut row| {
+                        body.rows(row_height, order.len(), |mut row| {
                             let entity = &data[order[row.index()]];
                             let is_selected = selected.as_deref() == Some(entity.row_id());
                             row.set_selected(is_selected);
 
                             row.col(|ui| {
-                                show_sprite(ui, sprites, entity.sprite_path(), ROW_HEIGHT - 4.0);
+                                show_sprite(ui, sprites, entity.sprite_path(), row_height - 4.0);
                             });
                             for col in &visible {
                                 row.col(|ui| {
@@ -411,6 +421,7 @@ mod tests {
                 Column {
                     id: "name",
                     label: "Name",
+                    full_label: "Name",
                     numeric: false,
                     default_visible: true,
                     higher_better: None,
@@ -421,6 +432,7 @@ mod tests {
                 Column {
                     id: "hp",
                     label: "HP",
+                    full_label: "Hit points",
                     numeric: true,
                     default_visible: true,
                     higher_better: Some(true),

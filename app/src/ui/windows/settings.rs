@@ -1,5 +1,5 @@
 use crate::ui::background::BackgroundSettings;
-use crate::ui::state::settings::{Settings, SettingsTab};
+use crate::ui::state::settings::{LayoutSettings, Settings, SettingsTab};
 use crate::ui::widgets::reset_slider::ResetSlider;
 use egui::{Grid, Response, ScrollArea, Widget};
 use strum::IntoEnumIterator;
@@ -30,6 +30,35 @@ impl<'a> SettingsWindow<'a> {
         if response.drag_stopped() || (response.changed() && !response.dragged()) {
             self.settings.dirty = true;
         }
+        ui.end_row();
+    }
+
+    fn layout(&mut self, ui: &mut egui::Ui) {
+        let layout = &mut self.settings.layout;
+        let def = LayoutSettings::default();
+
+        ui.label("Table Row Height")
+            .on_hover_text("Height of each row in the data table.");
+        ResetSlider::new(&mut layout.table_row_height, 16.0..=48.0)
+            .step_by(1.0)
+            .default_value(def.table_row_height)
+            .ui(ui);
+        ui.end_row();
+
+        ui.label("Compare Column Width")
+            .on_hover_text("Width of each pinned entity's column in the compare view.");
+        ResetSlider::new(&mut layout.compare_column_width, 90.0..=320.0)
+            .step_by(1.0)
+            .default_value(def.compare_column_width)
+            .ui(ui);
+        ui.end_row();
+
+        ui.label("Inspector Sprite Size")
+            .on_hover_text("Size of the sprite shown at the top of the inspector.");
+        ResetSlider::new(&mut layout.inspector_sprite_size, 64.0..=320.0)
+            .step_by(1.0)
+            .default_value(def.inspector_sprite_size)
+            .ui(ui);
         ui.end_row();
     }
 
@@ -168,6 +197,7 @@ impl<'a> SettingsWindow<'a> {
             .num_columns(2)
             .show(ui, |ui| match self.settings.active_tab {
                 SettingsTab::General => self.general(ui),
+                SettingsTab::Layout => self.layout(ui),
                 SettingsTab::Background => self.background(ui),
             });
     }

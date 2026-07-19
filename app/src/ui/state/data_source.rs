@@ -1,3 +1,4 @@
+use starsector_lab::locate::resolve_core_dir;
 use starsector_lab::validate_starsector_core_dir;
 use std::path::{Path, PathBuf};
 
@@ -6,6 +7,8 @@ pub struct DataSource {
     pub core_dir: Option<PathBuf>,
     #[serde(default)]
     pub saved: Vec<PathBuf>,
+    #[serde(skip)]
+    pub last_error: Option<String>,
 }
 
 impl DataSource {
@@ -14,6 +17,24 @@ impl DataSource {
             self.saved.push(dir.clone());
         }
         self.core_dir = Some(dir);
+    }
+
+    pub fn set_from_pick(&mut self, picked: PathBuf) -> bool {
+        match resolve_core_dir(&picked) {
+            Some(core) => {
+                self.set(core);
+                self.last_error = None;
+                true
+            }
+            None => {
+                self.last_error = Some(format!(
+                    "No Starsector data found in \"{}\". Pick your Starsector \
+                     install folder, Starsector.app, or the starsector-core folder.",
+                    picked.display()
+                ));
+                false
+            }
+        }
     }
 
     pub fn forget(&mut self, dir: &Path) {

@@ -11,10 +11,11 @@ fn opt_f32(value: Option<f32>) -> CellValue {
 }
 
 macro_rules! col {
-    ($id:literal, $label:literal, $num:expr, $vis:expr, $hb:expr, $w:expr, $tip:literal, $val:expr $(,)?) => {
+    ($id:literal, $label:literal, $full:literal, $num:expr, $vis:expr, $hb:expr, $w:expr, $tip:literal, $val:expr $(,)?) => {
         Column {
             id: $id,
             label: $label,
+            full_label: $full,
             numeric: $num,
             default_visible: $vis,
             higher_better: $hb,
@@ -30,6 +31,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "name",
         "Name",
+        "Name",
         false,
         true,
         None,
@@ -39,6 +41,7 @@ const COLUMNS: &[Column<Ship>] = &[
     ),
     col!(
         "designation",
+        "Role",
         "Role",
         false,
         true,
@@ -50,6 +53,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "hull_size",
         "Size",
+        "Hull size",
         false,
         true,
         None,
@@ -60,6 +64,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "tech",
         "Tech",
+        "Tech / maker",
         false,
         false,
         None,
@@ -70,6 +75,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "system",
         "System",
+        "Ship system",
         false,
         false,
         None,
@@ -81,6 +87,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "fleet_points",
         "FP",
+        "Fleet points",
         true,
         true,
         Some(false),
@@ -91,6 +98,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "ordnance_points",
         "OP",
+        "Ordnance points",
         true,
         true,
         Some(true),
@@ -101,6 +109,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "base_value",
         "Value",
+        "Base value",
         true,
         true,
         Some(true),
@@ -111,6 +120,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "mounts",
         "Mounts",
+        "Weapon mounts",
         true,
         false,
         None,
@@ -122,6 +132,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "hit_points",
         "Hull",
+        "Hull integrity",
         true,
         true,
         Some(true),
@@ -132,6 +143,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "armor_rating",
         "Armor",
+        "Armor rating",
         true,
         true,
         Some(true),
@@ -142,6 +154,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "max_flux",
         "Flux",
+        "Flux capacity",
         true,
         true,
         Some(true),
@@ -152,6 +165,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "flux_dissipation",
         "Diss",
+        "Flux dissipation",
         true,
         true,
         Some(true),
@@ -163,6 +177,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "shield_type",
         "Shield",
+        "Shield type",
         false,
         false,
         None,
@@ -173,6 +188,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "shield_arc",
         "Sh.Arc",
+        "Shield arc",
         true,
         false,
         Some(true),
@@ -183,6 +199,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "shield_upkeep",
         "Sh.Up",
+        "Shield upkeep",
         true,
         false,
         Some(false),
@@ -193,6 +210,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "shield_efficiency",
         "Sh.Eff",
+        "Shield efficiency",
         true,
         false,
         Some(false),
@@ -203,6 +221,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "phase_cost",
         "Ph.Cost",
+        "Phase cost",
         true,
         false,
         Some(false),
@@ -213,6 +232,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "phase_upkeep",
         "Ph.Up",
+        "Phase upkeep",
         true,
         false,
         Some(false),
@@ -224,6 +244,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "max_speed",
         "Speed",
+        "Top speed",
         true,
         true,
         Some(true),
@@ -234,6 +255,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "acceleration",
         "Accel",
+        "Acceleration",
         true,
         false,
         Some(true),
@@ -244,6 +266,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "deceleration",
         "Decel",
+        "Deceleration",
         true,
         false,
         Some(true),
@@ -254,6 +277,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "max_turn_rate",
         "Turn",
+        "Turn rate",
         true,
         false,
         Some(true),
@@ -264,6 +288,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "turn_acceleration",
         "TurnAcc",
+        "Turn acceleration",
         true,
         false,
         Some(true),
@@ -273,6 +298,7 @@ const COLUMNS: &[Column<Ship>] = &[
     ),
     col!(
         "mass",
+        "Mass",
         "Mass",
         true,
         false,
@@ -285,6 +311,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "fighter_bays",
         "Bays",
+        "Fighter bays",
         true,
         false,
         Some(true),
@@ -295,6 +322,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "min_crew",
         "MinCrew",
+        "Minimum crew",
         true,
         false,
         Some(false),
@@ -305,6 +333,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "max_crew",
         "MaxCrew",
+        "Maximum crew",
         true,
         false,
         Some(true),
@@ -315,6 +344,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "cargo",
         "Cargo",
+        "Cargo capacity",
         true,
         false,
         Some(true),
@@ -325,6 +355,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "fuel",
         "Fuel",
+        "Fuel capacity",
         true,
         false,
         Some(true),
@@ -335,6 +366,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "fuel_per_ly",
         "Fuel/ly",
+        "Fuel per light year",
         true,
         false,
         Some(false),
@@ -345,6 +377,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "max_burn",
         "Burn",
+        "Burn level",
         true,
         false,
         Some(true),
@@ -355,6 +388,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "supplies_per_month",
         "Sup/mo",
+        "Supplies per month",
         true,
         false,
         Some(false),
@@ -365,6 +399,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "supplies_per_recovery",
         "Sup/rec",
+        "Supplies per recovery",
         true,
         false,
         Some(false),
@@ -376,6 +411,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "cr_percent_per_day",
         "CR/day",
+        "CR per day",
         true,
         false,
         Some(true),
@@ -386,6 +422,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "cr_to_deploy",
         "CRdep",
+        "CR to deploy",
         true,
         false,
         Some(false),
@@ -396,6 +433,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "peak_cr_sec",
         "PeakCR",
+        "Peak CR seconds",
         true,
         false,
         Some(true),
@@ -406,6 +444,7 @@ const COLUMNS: &[Column<Ship>] = &[
     col!(
         "cr_loss_per_sec",
         "CRloss",
+        "CR loss per second",
         true,
         false,
         Some(false),

@@ -58,7 +58,11 @@ fn body<T: TableEntity>(ui: &mut Ui, table: &mut TableState) {
     ScrollArea::vertical().show(ui, |ui| {
         for col in T::columns() {
             let mut visible = table.is_visible(col.id);
-            if ui.checkbox(&mut visible, col.label).changed() {
+            let mut response = ui.checkbox(&mut visible, col.full_label);
+            if !col.tooltip.is_empty() {
+                response = response.on_hover_text(col.tooltip);
+            }
+            if response.changed() {
                 table.set_visible(T::columns(), col.id, visible);
             }
         }

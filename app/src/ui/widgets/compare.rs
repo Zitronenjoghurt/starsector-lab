@@ -2,12 +2,12 @@ use crate::ui::icons;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::sprite::{SpriteCache, show_sprite};
 use crate::ui::widgets::table::{Column, TableEntity};
-use egui::{Align, Color32, Layout, PopupCloseBehavior, ScrollArea, TextEdit, Ui};
+use egui::{Align, Color32, Layout, PopupCloseBehavior, RichText, ScrollArea, TextEdit, Ui};
 use egui_extras::{Column as EColumn, TableBuilder};
 
 const HEADER_SPRITE: f32 = 56.0;
-const LABEL_WIDTH: f32 = 96.0;
-const ENTITY_WIDTH: f32 = 150.0;
+const LABEL_WIDTH: f32 = 128.0;
+const DEFAULT_ENTITY_WIDTH: f32 = 150.0;
 const HEADER_HEIGHT: f32 = 120.0;
 const STAT_HEIGHT: f32 = 22.0;
 
@@ -35,6 +35,7 @@ pub struct Compare<'a, T: TableEntity> {
     selected: &'a Option<String>,
     search: &'a mut String,
     sprites: &'a mut SpriteCache,
+    column_width: f32,
 }
 
 impl<'a, T: TableEntity> Compare<'a, T> {
@@ -51,7 +52,13 @@ impl<'a, T: TableEntity> Compare<'a, T> {
             selected,
             search,
             sprites,
+            column_width: DEFAULT_ENTITY_WIDTH,
         }
+    }
+
+    pub fn column_width(mut self, column_width: f32) -> Self {
+        self.column_width = column_width;
+        self
     }
 
     pub fn show(mut self, ui: &mut Ui) {
@@ -72,15 +79,18 @@ impl<'a, T: TableEntity> Compare<'a, T> {
             return;
         }
 
+        let column_width = self.column_width;
         let sprites = &mut *self.sprites;
-        let fits = LABEL_WIDTH + entities.len() as f32 * ENTITY_WIDTH <= ui.available_width();
+        let fits = LABEL_WIDTH + entities.len() as f32 * column_width <= ui.available_width();
         let to_remove = if fits {
-            compare_table(ui, &entities, sprites, true)
+            compare_table(ui, &entities, sprites, None)
         } else {
             ScrollArea::horizontal()
                 .id_salt("compare_h")
                 .auto_shrink([false, false])
-                .show(ui, |ui| compare_table(ui, &entities, sprites, false))
+                .show(ui, |ui| {
+                    compare_table(ui, &entities, sprites, Some(column_width))
+                })
                 .inner
         };
 
@@ -151,23 +161,25 @@ fn compare_table<T: TableEntity>(
     ui: &mut Ui,
     entities: &[&T],
     sprites: &mut SpriteCache,
-    remainder: bool,
+    fixed_width: Option<f32>,
 ) -> Option<String> {
     let mut to_remove: Option<String> = None;
 
     let mut builder = TableBuilder::new(ui)
         .id_salt("compare")
-        .striped(true)
+        .striped(false)
         .auto_shrink([false, false])
         .min_scrolled_height(0.0)
         .cell_layout(Layout::left_to_right(Align::Center))
         .column(EColumn::exact(LABEL_WIDTH));
     for _ in entities {
-        builder = builder.column(if remainder {
-            EColumn::remainder()
-        } else {
-            EColumn::exact(ENTITY_WIDTH)
-        });
+        builder = builder.column(
+            match fixed_width {
+                Some(w) => EColumn::exact(w),
+                None => EColumn::remainder(),
+            }
+            .clip(true),
+        );
     }
 
     builder
@@ -179,7 +191,8 @@ fn compare_table<T: TableEntity>(
                 header.col(|ui| {
                     ui.vertical_centered(|ui| {
                         show_sprite(ui, sprites, entity.sprite_path(), HEADER_SPRITE);
-                        ui.strong(entity.name());
+                        ui.add(egui::Label::new(RichText::new(entity.name()).strong()).truncate())
+                            .on_hover_text(entity.name());
                         if ui.small_button(format!("{} remove", icons::X)).clicked() {
                             to_remove = Some(entity.row_id().to_owned());
                         }
@@ -188,15 +201,31 @@ fn compare_table<T: TableEntity>(
             }
         })
         .body(|mut body| {
-            for col in T::columns() {
+            for (i, col) in T::columns().iter().enumerate() {
+                let zebra = i % 2 == 1;
                 body.row(STAT_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.strong(col.label);
+                        if zebra {
+                            ui.painter().rect_filled(ui.max_rect(), 0.0, zebra_tint());
+                        }
+                        ui.add_space(4.0);
+                        let label = ui.add(
+                            egui::Label::new(RichText::new(col.full_label).strong()).truncate(),
+                        );
+                        if !col.tooltip.is_empty() {
+                            label.on_hover_text(col.tooltip);
+                        }
                     });
                     let ranked = rank(col, entities);
                     for (entity, tier) in entities.iter().zip(&ranked) {
                         row.col(|ui| {
-                            stat_cell(ui, (col.value)(entity).to_string(), *tier, col.numeric);
+                            stat_cell(
+                                ui,
+                                (col.value)(entity).to_string(),
+                                *tier,
+                                col.numeric,
+                                zebra,
+                            );
                         });
                     }
                 });
@@ -245,9 +274,16 @@ fn rank<T>(col: &Column<T>, entities: &[&T]) -> Vec<Option<Tier>> {
         .collect()
 }
 
-fn stat_cell(ui: &mut Ui, text: String, tier: Option<Tier>, numeric: bool) {
+fn zebra_tint() -> Color32 {
+    let base = Theme::PANEL_RAISED;
+    Color32::from_rgba_unmultiplied(base.r(), base.g(), base.b(), 64)
+}
+
+fn stat_cell(ui: &mut Ui, text: String, tier: Option<Tier>, numeric: bool, zebra: bool) {
     if let Some(tier) = tier {
         ui.painter().rect_filled(ui.max_rect(), 0.0, tier.tint());
+    } else if zebra {
+        ui.painter().rect_filled(ui.max_rect(), 0.0, zebra_tint());
     }
     let layout = if numeric {
         Layout::right_to_left(Align::Center)
@@ -255,6 +291,7 @@ fn stat_cell(ui: &mut Ui, text: String, tier: Option<Tier>, numeric: bool) {
         Layout::left_to_right(Align::Center)
     };
     ui.with_layout(layout, |ui| {
+        ui.add_space(8.0);
         if numeric {
             ui.monospace(text);
         } else {
@@ -276,6 +313,7 @@ mod tests {
         Column {
             id: "v",
             label: "V",
+            full_label: "Value",
             numeric: true,
             default_visible: true,
             higher_better,

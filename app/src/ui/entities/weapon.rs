@@ -11,10 +11,11 @@ fn f(value: Option<f32>) -> CellValue {
 }
 
 macro_rules! col {
-    ($id:literal, $label:literal, $num:expr, $vis:expr, $hb:expr, $w:expr, $tip:literal, $val:expr $(,)?) => {
+    ($id:literal, $label:literal, $full:literal, $num:expr, $vis:expr, $hb:expr, $w:expr, $tip:literal, $val:expr $(,)?) => {
         Column {
             id: $id,
             label: $label,
+            full_label: $full,
             numeric: $num,
             default_visible: $vis,
             higher_better: $hb,
@@ -30,6 +31,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "name",
         "Name",
+        "Name",
         false,
         true,
         None,
@@ -39,6 +41,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     ),
     col!(
         "role",
+        "Role",
         "Role",
         false,
         true,
@@ -50,6 +53,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "mount_size",
         "Size",
+        "Mount size",
         false,
         true,
         None,
@@ -60,6 +64,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "mount_type",
         "Mount",
+        "Mount type",
         false,
         true,
         None,
@@ -70,6 +75,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "damage_type",
         "Dmg type",
+        "Damage type",
         false,
         true,
         None,
@@ -80,6 +86,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "class",
         "Class",
+        "Projectile class",
         false,
         false,
         None,
@@ -90,6 +97,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "tech",
         "Tech",
+        "Tech / maker",
         false,
         false,
         None,
@@ -100,6 +108,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "tier",
         "Tier",
+        "Balance tier",
         true,
         false,
         None,
@@ -111,6 +120,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "op",
         "OP",
+        "Ordnance points",
         true,
         true,
         Some(false),
@@ -121,6 +131,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "value",
         "Value",
+        "Base value",
         true,
         false,
         Some(true),
@@ -132,6 +143,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "range",
         "Range",
+        "Range",
         true,
         true,
         Some(true),
@@ -142,6 +154,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "dps",
         "DPS",
+        "Damage per second",
         true,
         true,
         Some(true),
@@ -152,6 +165,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "dmg_shot",
         "Dmg/shot",
+        "Damage per shot",
         true,
         true,
         Some(true),
@@ -162,6 +176,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "emp",
         "EMP",
+        "EMP damage",
         true,
         false,
         Some(true),
@@ -172,6 +187,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "impact",
         "Impact",
+        "Impact strength",
         true,
         false,
         Some(true),
@@ -182,6 +198,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "turn_rate",
         "Turn",
+        "Turret turn rate",
         true,
         false,
         Some(true),
@@ -193,6 +210,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "ammo",
         "Ammo",
+        "Ammo capacity",
         true,
         false,
         Some(true),
@@ -203,6 +221,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "ammo_sec",
         "Ammo/s",
+        "Ammo per second",
         true,
         false,
         Some(true),
@@ -213,6 +232,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "reload",
         "Reload",
+        "Reload size",
         true,
         false,
         Some(true),
@@ -223,6 +243,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "flux_shot",
         "Flux/shot",
+        "Flux per shot",
         true,
         false,
         Some(false),
@@ -233,6 +254,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "flux_sec",
         "Flux/s",
+        "Flux per second",
         true,
         false,
         Some(false),
@@ -243,6 +265,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "chargeup",
         "Chargeup",
+        "Charge-up time",
         true,
         false,
         Some(false),
@@ -253,6 +276,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "chargedown",
         "Chargedn",
+        "Charge-down time",
         true,
         false,
         Some(false),
@@ -263,6 +287,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "burst_size",
         "Burst",
+        "Burst size",
         true,
         false,
         None,
@@ -273,6 +298,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "burst_delay",
         "BurstDly",
+        "Burst delay",
         true,
         false,
         Some(false),
@@ -284,6 +310,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "proj_speed",
         "ProjSpd",
+        "Projectile speed",
         true,
         false,
         Some(true),
@@ -294,6 +321,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "flight",
         "Flight",
+        "Flight time",
         true,
         false,
         Some(true),
@@ -304,6 +332,7 @@ const COLUMNS: &[Column<Weapon>] = &[
     col!(
         "proj_hp",
         "ProjHP",
+        "Projectile HP",
         true,
         false,
         Some(true),

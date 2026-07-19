@@ -34,7 +34,10 @@ impl Theme {
     pub fn apply(ctx: &egui::Context) {
         Self::apply_fonts(ctx);
         Self::apply_visuals(ctx);
-        ctx.all_styles_mut(|style| style.interaction.selectable_labels = false);
+        ctx.all_styles_mut(|style| {
+            style.interaction.selectable_labels = false;
+            style.spacing.scroll = egui::style::ScrollStyle::solid();
+        });
     }
 
     fn apply_fonts(ctx: &egui::Context) {
